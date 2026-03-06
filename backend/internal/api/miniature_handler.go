@@ -19,9 +19,9 @@ type miniatureHandler struct {
 
 func (h *miniatureHandler) list(w http.ResponseWriter, r *http.Request) {
 	claims := auth.ClaimsFromContext(r.Context())
-	collectionID := chi.URLParam(r, "collectionID")
+	boxID := chi.URLParam(r, "boxID")
 
-	minis, err := h.miniatures.ListByCollection(collectionID, claims.UserID)
+	minis, err := h.miniatures.ListByBox(boxID, claims.UserID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
@@ -34,7 +34,7 @@ func (h *miniatureHandler) list(w http.ResponseWriter, r *http.Request) {
 
 func (h *miniatureHandler) create(w http.ResponseWriter, r *http.Request) {
 	claims := auth.ClaimsFromContext(r.Context())
-	collectionID := chi.URLParam(r, "collectionID")
+	boxID := chi.URLParam(r, "boxID")
 
 	var req struct {
 		Name     string `json:"name"`
@@ -50,22 +50,19 @@ func (h *miniatureHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
-	if req.Quantity < 1 {
-		req.Quantity = 1
-	}
 
 	now := time.Now()
 	m := &models.Miniature{
-		ID:           uuid.NewString(),
-		CollectionID: collectionID,
-		UserID:       claims.UserID,
-		Name:         req.Name,
-		UnitType:     req.UnitType,
-		Quantity:     req.Quantity,
-		Status:       models.StatusUnpainted,
-		Notes:        req.Notes,
-		CreatedAt:    now,
-		UpdatedAt:    now,
+		ID:     uuid.NewString(),
+		BoxID:  boxID,
+		UserID: claims.UserID,
+		Name:      req.Name,
+		UnitType:  req.UnitType,
+		Quantity:  max(req.Quantity, 1),
+		Status:    models.StatusUnpainted,
+		Notes:     req.Notes,
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	if err := h.miniatures.Create(m); err != nil {
 		writeError(w, http.StatusInternalServerError, "internal error")

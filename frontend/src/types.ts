@@ -17,14 +17,31 @@ export interface Collection {
   id: string
   user_id: string
   name: string
-  game: string
   notes: string
+  created_at: string
+}
+
+export interface Game {
+  id: string
+  collection_id: string
+  user_id: string
+  name: string
+  publisher: string
+  year?: number
+  created_at: string
+}
+
+export interface Box {
+  id: string
+  game_id: string
+  user_id: string
+  name: string
   created_at: string
 }
 
 export interface Miniature {
   id: string
-  collection_id: string
+  box_id: string
   user_id: string
   name: string
   unit_type: string

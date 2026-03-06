@@ -15,9 +15,9 @@ func NewMiniatureRepository(db *sql.DB) MiniatureRepository {
 
 func (r *sqliteMiniatureRepo) Create(m *models.Miniature) error {
 	_, err := r.db.Exec(
-		`INSERT INTO miniatures (id, collection_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at)
+		`INSERT INTO miniatures (id, box_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		m.ID, m.CollectionID, m.UserID, m.Name, m.UnitType, m.Quantity, m.Status, m.Notes, m.CreatedAt, m.UpdatedAt,
+		m.ID, m.BoxID, m.UserID, m.Name, m.UnitType, m.Quantity, m.Status, m.Notes, m.CreatedAt, m.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("create miniature: %w", err)
@@ -28,9 +28,9 @@ func (r *sqliteMiniatureRepo) Create(m *models.Miniature) error {
 func (r *sqliteMiniatureRepo) GetByID(id string) (*models.Miniature, error) {
 	m := &models.Miniature{}
 	err := r.db.QueryRow(
-		`SELECT id, collection_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at
+		`SELECT id, box_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at
 		 FROM miniatures WHERE id = ?`, id,
-	).Scan(&m.ID, &m.CollectionID, &m.UserID, &m.Name, &m.UnitType, &m.Quantity, &m.Status, &m.Notes, &m.CreatedAt, &m.UpdatedAt)
+	).Scan(&m.ID, &m.BoxID, &m.UserID, &m.Name, &m.UnitType, &m.Quantity, &m.Status, &m.Notes, &m.CreatedAt, &m.UpdatedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -40,11 +40,11 @@ func (r *sqliteMiniatureRepo) GetByID(id string) (*models.Miniature, error) {
 	return m, nil
 }
 
-func (r *sqliteMiniatureRepo) ListByCollection(collectionID, userID string) ([]models.Miniature, error) {
+func (r *sqliteMiniatureRepo) ListByBox(boxID, userID string) ([]models.Miniature, error) {
 	rows, err := r.db.Query(
-		`SELECT id, collection_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at
-		 FROM miniatures WHERE collection_id = ? AND user_id = ? ORDER BY name ASC`,
-		collectionID, userID,
+		`SELECT id, box_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at
+		 FROM miniatures WHERE box_id = ? AND user_id = ? ORDER BY name ASC`,
+		boxID, userID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("list miniatures: %w", err)
@@ -54,7 +54,7 @@ func (r *sqliteMiniatureRepo) ListByCollection(collectionID, userID string) ([]m
 	var out []models.Miniature
 	for rows.Next() {
 		var m models.Miniature
-		if err := rows.Scan(&m.ID, &m.CollectionID, &m.UserID, &m.Name, &m.UnitType, &m.Quantity, &m.Status, &m.Notes, &m.CreatedAt, &m.UpdatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.BoxID, &m.UserID, &m.Name, &m.UnitType, &m.Quantity, &m.Status, &m.Notes, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan miniature: %w", err)
 		}
 		out = append(out, m)
@@ -120,9 +120,8 @@ func (r *sqliteMiniatureRepo) GetDashboardStats(userID string) (*models.Dashboar
 		stats.ShamePercent = float64(stats.UnpaintedMinis) / float64(stats.TotalMinis) * 100
 	}
 
-	// Recent activity: last 10 updated minis
 	recentRows, err := r.db.Query(
-		`SELECT id, collection_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at
+		`SELECT id, box_id, user_id, name, unit_type, quantity, status, notes, created_at, updated_at
 		 FROM miniatures WHERE user_id = ? ORDER BY updated_at DESC LIMIT 10`, userID,
 	)
 	if err != nil {
@@ -132,7 +131,7 @@ func (r *sqliteMiniatureRepo) GetDashboardStats(userID string) (*models.Dashboar
 
 	for recentRows.Next() {
 		var m models.Miniature
-		if err := recentRows.Scan(&m.ID, &m.CollectionID, &m.UserID, &m.Name, &m.UnitType, &m.Quantity, &m.Status, &m.Notes, &m.CreatedAt, &m.UpdatedAt); err != nil {
+		if err := recentRows.Scan(&m.ID, &m.BoxID, &m.UserID, &m.Name, &m.UnitType, &m.Quantity, &m.Status, &m.Notes, &m.CreatedAt, &m.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan recent: %w", err)
 		}
 		stats.RecentActivity = append(stats.RecentActivity, m)

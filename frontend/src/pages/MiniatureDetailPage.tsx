@@ -96,7 +96,7 @@ export default function MiniatureDetailPage({ id, nav }: { id: string; nav: (p: 
 
   return (
     <div>
-      <button onClick={() => nav({ name: 'collection', id: mini.collection_id })} style={linkBtn}>← Back to collection</button>
+      <button onClick={() => nav({ name: 'box', id: mini.box_id })} style={linkBtn}>← Back to box</button>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem', margin: '1rem 0' }}>
         <h2 style={{ margin: 0 }}>{mini.name}</h2>

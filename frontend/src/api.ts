@@ -1,4 +1,4 @@
-import type { Collection, DashboardStats, Miniature, MiniatureImage, MiniaturePaint, Paint, User } from './types'
+import type { Box, Collection, DashboardStats, Game, Miniature, MiniatureImage, MiniaturePaint, Paint, User } from './types'
 
 const BASE = ''
 
@@ -47,18 +47,46 @@ export const getDashboard = () => req<DashboardStats>('GET', '/api/dashboard')
 // Collections
 export const getCollections = () => req<Collection[]>('GET', '/api/collections')
 export const getCollection = (id: string) => req<Collection>('GET', `/api/collections/${id}`)
-export const createCollection = (body: { name: string; game: string; set?: string; notes?: string }) =>
-  req<{ collection: Collection; miniatures: Miniature[] }>('POST', '/api/collections', body)
+export const createCollection = (body: { name: string; notes?: string }) =>
+  req<Collection>('POST', '/api/collections', body)
 export const updateCollection = (id: string, body: Partial<Collection>) =>
   req<Collection>('PUT', `/api/collections/${id}`, body)
 export const deleteCollection = (id: string) => req<void>('DELETE', `/api/collections/${id}`)
 
+// Games
+export const getGames = (collectionID: string) =>
+  req<Game[]>('GET', `/api/collections/${collectionID}/games`)
+export const getGame = (id: string) => req<Game>('GET', `/api/games/${id}`)
+export const createGame = (collectionID: string, body: { name: string; publisher?: string; year?: number }) =>
+  req<Game>('POST', `/api/collections/${collectionID}/games`, body)
+export const updateGame = (id: string, body: { name: string; publisher?: string; year?: number }) =>
+  req<Game>('PUT', `/api/games/${id}`, body)
+export const deleteGame = (id: string) => req<void>('DELETE', `/api/games/${id}`)
+
+// Boxes
+export const getBoxes = (gameID: string) =>
+  req<Box[]>('GET', `/api/games/${gameID}/boxes`)
+export const getBox = (id: string) => req<Box>('GET', `/api/boxes/${id}`)
+export interface MiniSuggestion {
+  name: string
+  unit_type: string
+  quantity: number
+}
+
+export const createBox = (gameID: string, body: { name: string }) =>
+  req<{ box: Box; suggestions: MiniSuggestion[]; claude_error?: string; source: 'catalog' | 'claude' | 'none' }>('POST', `/api/games/${gameID}/boxes`, body)
+export const confirmBox = (boxID: string, miniatures: MiniSuggestion[]) =>
+  req<{ miniatures: Miniature[] }>('POST', `/api/boxes/${boxID}/confirm`, { miniatures })
+export const updateBox = (id: string, body: { name: string }) =>
+  req<Box>('PUT', `/api/boxes/${id}`, body)
+export const deleteBox = (id: string) => req<void>('DELETE', `/api/boxes/${id}`)
+
 // Miniatures
-export const getMiniatures = (collectionID: string) =>
-  req<Miniature[]>('GET', `/api/collections/${collectionID}/miniatures`)
+export const getMiniatures = (boxID: string) =>
+  req<Miniature[]>('GET', `/api/boxes/${boxID}/miniatures`)
 export const getMiniature = (id: string) => req<Miniature>('GET', `/api/miniatures/${id}`)
-export const createMiniature = (collectionID: string, body: { name: string; unit_type?: string; quantity?: number; notes?: string }) =>
-  req<Miniature>('POST', `/api/collections/${collectionID}/miniatures`, body)
+export const createMiniature = (boxID: string, body: { name: string; unit_type?: string; quantity?: number; notes?: string }) =>
+  req<Miniature>('POST', `/api/boxes/${boxID}/miniatures`, body)
 export const updateMiniature = (id: string, body: Partial<Miniature>) =>
   req<Miniature>('PATCH', `/api/miniatures/${id}`, body)
 export const deleteMiniature = (id: string) => req<void>('DELETE', `/api/miniatures/${id}`)

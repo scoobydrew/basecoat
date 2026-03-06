@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 
 	"github.com/anthropics/anthropic-sdk-go"
 	"github.com/anthropics/anthropic-sdk-go/option"
@@ -26,12 +28,26 @@ func NewClient(apiKey string) *Client {
 	return &Client{client: &c}
 }
 
+// GameMeta holds optional metadata about a game to improve Claude's lookup accuracy.
+type GameMeta struct {
+	Publisher string
+	Year      *int
+}
+
 // LookupMinis asks Claude for a list of miniatures in a given game/set.
-func (c *Client) LookupMinis(ctx context.Context, game, set string) ([]MiniSuggestion, error) {
+func (c *Client) LookupMinis(ctx context.Context, game, set string, meta GameMeta) ([]MiniSuggestion, error) {
+	var extras strings.Builder
+	if meta.Publisher != "" {
+		fmt.Fprintf(&extras, "\nPublisher: %s", meta.Publisher)
+	}
+	if meta.Year != nil {
+		fmt.Fprintf(&extras, "\nYear: %d", *meta.Year)
+	}
+
 	prompt := fmt.Sprintf(
 		`You are a tabletop miniature painting expert. List the miniatures included in the following game or set.
 
-Game/System: %s
+Game/System: %s%s
 Set/Box: %s
 
 Respond with ONLY a JSON array. Each element should have:
@@ -41,11 +57,11 @@ Respond with ONLY a JSON array. Each element should have:
 
 If you don't recognize the game or set, return an empty array [].
 Do not include any text outside the JSON array.`,
-		game, set,
+		game, extras.String(), set,
 	)
 
 	msg, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaude3_5HaikuLatest,
+		Model:     "claude-haiku-4-5-20251001",
 		MaxTokens: 2048,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
@@ -59,7 +75,7 @@ Do not include any text outside the JSON array.`,
 		return nil, fmt.Errorf("claude returned empty response")
 	}
 
-	raw := msg.Content[0].Text
+	raw := extractJSON(msg.Content[0].Text)
 
 	var minis []MiniSuggestion
 	if err := json.Unmarshal([]byte(raw), &minis); err != nil {
@@ -67,4 +83,15 @@ Do not include any text outside the JSON array.`,
 	}
 
 	return minis, nil
+}
+
+var codeBlockRe = regexp.MustCompile("(?s)```(?:json)?\\s*(\\[.*?\\])\\s*```")
+
+// extractJSON strips markdown code fences if present, otherwise returns the input trimmed.
+func extractJSON(s string) string {
+	s = strings.TrimSpace(s)
+	if m := codeBlockRe.FindStringSubmatch(s); len(m) == 2 {
+		return strings.TrimSpace(m[1])
+	}
+	return s
 }

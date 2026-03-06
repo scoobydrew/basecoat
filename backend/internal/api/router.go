@@ -12,16 +12,19 @@ import (
 )
 
 type Config struct {
-	JWTSecret  string
-	Users      db.UserRepository
+	JWTSecret   string
+	Users       db.UserRepository
+	Games       db.GameRepository
 	Collections db.CollectionRepository
+	Boxes       db.BoxRepository
 	Miniatures  db.MiniatureRepository
 	Paints      db.PaintRepository
 	MiniPaints  db.MiniaturePaintRepository
 	Images      db.ImageRepository
+	Catalog     db.CatalogRepository
 	Storage     storage.Storage
 	Claude      *claude.Client
-	StoragePath string // local FS root, used to serve static files
+	StoragePath string
 	BaseURL     string
 }
 
@@ -31,7 +34,6 @@ func NewRouter(cfg Config) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RealIP)
 
-	// CORS — allow the React dev server
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -45,30 +47,43 @@ func NewRouter(cfg Config) http.Handler {
 		})
 	})
 
-	// Serve uploaded images statically
 	r.Handle("/uploads/*", http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.StoragePath))))
 
 	ah := &authHandler{users: cfg.Users, jwtSecret: cfg.JWTSecret}
 	r.Post("/api/auth/register", ah.register)
 	r.Post("/api/auth/login", ah.login)
 
-	// All routes below require auth
 	r.Group(func(r chi.Router) {
 		r.Use(auth.Middleware(cfg.JWTSecret))
 
 		dh := &dashboardHandler{miniatures: cfg.Miniatures}
 		r.Get("/api/dashboard", dh.get)
 
-		ch := &collectionHandler{collections: cfg.Collections, miniatures: cfg.Miniatures, claude: cfg.Claude}
+		ch := &collectionHandler{collections: cfg.Collections}
 		r.Get("/api/collections", ch.list)
 		r.Post("/api/collections", ch.create)
 		r.Get("/api/collections/{id}", ch.get)
 		r.Put("/api/collections/{id}", ch.update)
 		r.Delete("/api/collections/{id}", ch.delete)
 
+		gh := &gameHandler{games: cfg.Games, collections: cfg.Collections, catalog: cfg.Catalog}
+		r.Get("/api/collections/{collectionID}/games", gh.list)
+		r.Post("/api/collections/{collectionID}/games", gh.create)
+		r.Get("/api/games/{id}", gh.get)
+		r.Put("/api/games/{id}", gh.update)
+		r.Delete("/api/games/{id}", gh.delete)
+
+		bh := &boxHandler{boxes: cfg.Boxes, games: cfg.Games, miniatures: cfg.Miniatures, catalog: cfg.Catalog, claude: cfg.Claude}
+		r.Get("/api/games/{gameID}/boxes", bh.list)
+		r.Post("/api/games/{gameID}/boxes", bh.create)
+		r.Post("/api/boxes/{id}/confirm", bh.confirm)
+		r.Get("/api/boxes/{id}", bh.get)
+		r.Put("/api/boxes/{id}", bh.update)
+		r.Delete("/api/boxes/{id}", bh.delete)
+
 		mh := &miniatureHandler{miniatures: cfg.Miniatures, paints: cfg.MiniPaints, images: cfg.Images}
-		r.Get("/api/collections/{collectionID}/miniatures", mh.list)
-		r.Post("/api/collections/{collectionID}/miniatures", mh.create)
+		r.Get("/api/boxes/{boxID}/miniatures", mh.list)
+		r.Post("/api/boxes/{boxID}/miniatures", mh.create)
 		r.Get("/api/miniatures/{id}", mh.get)
 		r.Patch("/api/miniatures/{id}", mh.update)
 		r.Delete("/api/miniatures/{id}", mh.delete)

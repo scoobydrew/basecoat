@@ -19,11 +19,40 @@ type CollectionRepository interface {
 	Delete(id, userID string) error
 }
 
+// GameRepository defines game persistence operations.
+type GameRepository interface {
+	Create(g *models.Game) error
+	GetByID(id string) (*models.Game, error)
+	ListByCollection(collectionID, userID string) ([]models.Game, error)
+	Update(g *models.Game) error
+	Delete(id, userID string) error
+}
+
+// BoxRepository defines box persistence operations.
+type BoxRepository interface {
+	Create(b *models.Box) error
+	GetByID(id string) (*models.Box, error)
+	ListByGame(gameID, userID string) ([]models.Box, error)
+	Update(b *models.Box) error
+	Delete(id, userID string) error
+	SetCatalogBoxID(id, catalogBoxID string) error
+}
+
+// CatalogRepository manages the shared game/box/miniature catalog.
+type CatalogRepository interface {
+	FindGame(name, publisher string) (*models.CatalogGame, error)
+	CreateGame(g *models.CatalogGame) error
+	FindBox(catalogGameID, name string) (*models.CatalogBox, error)
+	CreateBox(b *models.CatalogBox) error
+	ListBoxMiniatures(catalogBoxID string) ([]models.CatalogMiniature, error)
+	CreateMiniature(m *models.CatalogMiniature) error
+}
+
 // MiniatureRepository defines miniature persistence operations.
 type MiniatureRepository interface {
 	Create(m *models.Miniature) error
 	GetByID(id string) (*models.Miniature, error)
-	ListByCollection(collectionID, userID string) ([]models.Miniature, error)
+	ListByBox(boxID, userID string) ([]models.Miniature, error)
 	Update(m *models.Miniature) error
 	Delete(id, userID string) error
 	GetDashboardStats(userID string) (*models.DashboardStats, error)

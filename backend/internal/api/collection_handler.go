@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/drews/basecoat/internal/auth"
-	"github.com/drews/basecoat/internal/claude"
 	"github.com/drews/basecoat/internal/db"
 	"github.com/drews/basecoat/internal/models"
 	"github.com/go-chi/chi/v5"
@@ -14,8 +13,6 @@ import (
 
 type collectionHandler struct {
 	collections db.CollectionRepository
-	miniatures  db.MiniatureRepository
-	claude      *claude.Client
 }
 
 func (h *collectionHandler) list(w http.ResponseWriter, r *http.Request) {
@@ -36,16 +33,14 @@ func (h *collectionHandler) create(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Name  string `json:"name"`
-		Game  string `json:"game"`
-		Set   string `json:"set"`
 		Notes string `json:"notes"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.Name == "" || req.Game == "" {
-		writeError(w, http.StatusBadRequest, "name and game are required")
+	if req.Name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
 		return
 	}
 
@@ -53,7 +48,6 @@ func (h *collectionHandler) create(w http.ResponseWriter, r *http.Request) {
 		ID:        uuid.NewString(),
 		UserID:    claims.UserID,
 		Name:      req.Name,
-		Game:      req.Game,
 		Notes:     req.Notes,
 		CreatedAt: time.Now(),
 	}
@@ -61,39 +55,7 @@ func (h *collectionHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
-
-	// If a set was provided, ask Claude to seed the miniature list.
-	var minis []models.Miniature
-	if req.Set != "" && h.claude != nil {
-		suggestions, err := h.claude.LookupMinis(r.Context(), req.Game, req.Set)
-		if err == nil {
-			for _, s := range suggestions {
-				qty := s.Quantity
-				if qty < 1 {
-					qty = 1
-				}
-				m := &models.Miniature{
-					ID:           uuid.NewString(),
-					CollectionID: col.ID,
-					UserID:       claims.UserID,
-					Name:         s.Name,
-					UnitType:     s.UnitType,
-					Quantity:     qty,
-					Status:       models.StatusUnpainted,
-					CreatedAt:    time.Now(),
-					UpdatedAt:    time.Now(),
-				}
-				if err := h.miniatures.Create(m); err == nil {
-					minis = append(minis, *m)
-				}
-			}
-		}
-	}
-
-	writeJSON(w, http.StatusCreated, map[string]any{
-		"collection": col,
-		"miniatures": minis,
-	})
+	writeJSON(w, http.StatusCreated, col)
 }
 
 func (h *collectionHandler) get(w http.ResponseWriter, r *http.Request) {
@@ -124,7 +86,6 @@ func (h *collectionHandler) update(w http.ResponseWriter, r *http.Request) {
 
 	var req struct {
 		Name  string `json:"name"`
-		Game  string `json:"game"`
 		Notes string `json:"notes"`
 	}
 	if err := decodeJSON(r, &req); err != nil {
@@ -133,9 +94,6 @@ func (h *collectionHandler) update(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.Name != "" {
 		col.Name = req.Name
-	}
-	if req.Game != "" {
-		col.Game = req.Game
 	}
 	col.Notes = req.Notes
 

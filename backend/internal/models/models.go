@@ -14,8 +14,19 @@ type Collection struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	Name      string    `json:"name"`
-	Game      string    `json:"game"`
 	Notes     string    `json:"notes"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type Game struct {
+	ID            string    `json:"id"`
+	CollectionID  string    `json:"collection_id"`
+	UserID        string    `json:"user_id"`
+	Name          string    `json:"name"`
+	CatalogGameID string    `json:"catalog_game_id,omitempty"`
+	// Populated via JOIN with catalog_games — not stored on this table.
+	Publisher string `json:"publisher,omitempty"`
+	Year      *int   `json:"year,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -30,10 +41,45 @@ const (
 	StatusFinished    PaintingStatus = "finished"
 )
 
+type Box struct {
+	ID            string    `json:"id"`
+	GameID        string    `json:"game_id"`
+	UserID        string    `json:"user_id"`
+	Name          string    `json:"name"`
+	CatalogBoxID  string    `json:"catalog_box_id,omitempty"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// Catalog types — shared across all users, no user_id.
+
+type CatalogGame struct {
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Publisher string    `json:"publisher"`
+	Year      *int      `json:"year,omitempty"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type CatalogBox struct {
+	ID            string    `json:"id"`
+	CatalogGameID string    `json:"catalog_game_id"`
+	Name          string    `json:"name"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+type CatalogMiniature struct {
+	ID           string    `json:"id"`
+	CatalogBoxID string    `json:"catalog_box_id"`
+	Name         string    `json:"name"`
+	UnitType     string    `json:"unit_type"`
+	Quantity     int       `json:"quantity"`
+	CreatedAt    time.Time `json:"created_at"`
+}
+
 type Miniature struct {
-	ID           string         `json:"id"`
-	CollectionID string         `json:"collection_id"`
-	UserID       string         `json:"user_id"`
+	ID    string `json:"id"`
+	BoxID string `json:"box_id"`
+	UserID string `json:"user_id"`
 	Name         string         `json:"name"`
 	UnitType     string         `json:"unit_type"`
 	Quantity     int            `json:"quantity"`

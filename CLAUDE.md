@@ -66,7 +66,8 @@ Images are associated with a specific mini and a painting stage. Store metadata 
 ### Backend
 ```bash
 cd backend
-go run ./cmd/server          # Run the dev server (reads .env automatically)
+air                          # Run dev server with hot reload (reads .env automatically)
+go run ./cmd/server          # Run without hot reload
 go test ./...                # Run all tests
 go test ./internal/api/...   # Run tests for a specific package
 go build ./cmd/server        # Build the binary
