@@ -45,23 +45,31 @@ func (c *Client) LookupMinis(ctx context.Context, game, set string, meta GameMet
 	}
 
 	prompt := fmt.Sprintf(
-		`You are a tabletop miniature painting expert. List the miniatures included in the following game or set.
+		`You are a tabletop miniature game expert with detailed knowledge of boardgame and wargame box contents.
+
+List the exact miniatures included in this specific product:
 
 Game/System: %s%s
-Set/Box: %s
+Box/Set: %s
 
-Respond with ONLY a JSON array. Each element should have:
-- "name": the miniature's name or type (string)
-- "unit_type": the unit category (e.g. "infantry", "cavalry", "monster", "hero", "vehicle") (string)
-- "quantity": typical quantity included in the set (integer, default 1 if unknown)
+Rules:
+- Only list miniatures you are confident are actually in this box. Do not guess or approximate.
+- If you are uncertain about a specific miniature, omit it rather than including it.
+- If you do not recognise this product or are not confident in its contents, return an empty array.
+- Each entry must have the exact miniature name as it appears in the rulebook or on the box.
+- "quantity" is the actual number of that sculpt/unit included, not a default.
 
-If you don't recognize the game or set, return an empty array [].
+Respond with ONLY a JSON array. Each element:
+- "name": exact miniature name (string)
+- "unit_type": category such as "infantry", "cavalry", "monster", "hero", "vehicle", "terrain" (string)
+- "quantity": exact count included in the box (integer)
+
 Do not include any text outside the JSON array.`,
 		game, extras.String(), set,
 	)
 
 	msg, err := c.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     "claude-haiku-4-5-20251001",
+		Model:     "claude-sonnet-4-6",
 		MaxTokens: 2048,
 		Messages: []anthropic.MessageParam{
 			anthropic.NewUserMessage(anthropic.NewTextBlock(prompt)),
