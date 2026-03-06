@@ -41,7 +41,7 @@ export default function App() {
   const collectionsActive = ['collections', 'collection', 'game', 'miniature'].includes(page.name)
 
   return (
-    <div style={{ fontFamily: 'sans-serif', maxWidth: 900, margin: '0 auto', padding: '0 1rem' }}>
+    <div>
       <nav style={{ display: 'flex', gap: '1rem', padding: '1rem 0', borderBottom: '1px solid #ccc', marginBottom: '1.5rem', alignItems: 'center' }}>
         <strong style={{ marginRight: '0.5rem' }}>🎨 Basecoat</strong>
         <NavLink label="Dashboard" active={page.name === 'dashboard'} onClick={() => nav({ name: 'dashboard' })} />

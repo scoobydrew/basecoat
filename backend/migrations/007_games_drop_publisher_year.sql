@@ -1,2 +1,0 @@
-ALTER TABLE games DROP COLUMN publisher;
-ALTER TABLE games DROP COLUMN year;
