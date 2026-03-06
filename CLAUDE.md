@@ -76,9 +76,8 @@ go build ./cmd/server        # Build the binary
 ```bash
 cd frontend
 npm install                  # Install dependencies
-npm run dev                  # Start Vite dev server
+npm run dev                  # Start Vite dev server (proxies /api and /uploads to :8080)
 npm run build                # Production build
-npm run test                 # Run tests
 npm run lint                 # Lint
 ```
 

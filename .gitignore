@@ -1,4 +1,6 @@
 backend/basecoat.db
+backend/basecoat.db-shm
+backend/basecoat.db-wal
 backend/uploads/
 backend/.env
 frontend/node_modules/
