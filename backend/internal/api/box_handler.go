@@ -183,7 +183,7 @@ func (h *boxHandler) confirm(w http.ResponseWriter, r *http.Request) {
 		if err != nil || g == nil {
 			log.Printf("confirm: could not load game for catalog contribution: %v", err)
 		} else {
-			h.contributeTocatalog(b, g, req.Miniatures)
+			h.contributeToCatalog(b, g, req.Miniatures)
 		}
 	}
 
