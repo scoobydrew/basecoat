@@ -36,6 +36,23 @@ func (r *sqliteUserRepo) GetByUsername(username string) (*models.User, error) {
 	return r.scanOne(r.db.QueryRow(`SELECT id, username, email, password_hash, created_at FROM users WHERE username = ?`, username))
 }
 
+func (r *sqliteUserRepo) ListAll() ([]models.User, error) {
+	rows, err := r.db.Query(`SELECT id, username, email, password_hash, created_at FROM users`)
+	if err != nil {
+		return nil, fmt.Errorf("list users: %w", err)
+	}
+	defer rows.Close()
+	var out []models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan user: %w", err)
+		}
+		out = append(out, u)
+	}
+	return out, rows.Err()
+}
+
 func (r *sqliteUserRepo) scanOne(row *sql.Row) (*models.User, error) {
 	u := &models.User{}
 	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &u.CreatedAt); err != nil {
