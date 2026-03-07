@@ -17,7 +17,17 @@ func Open(dsn string) (*sql.DB, error) {
 	if err := db.Ping(); err != nil {
 		return nil, fmt.Errorf("ping db: %w", err)
 	}
+	// Checkpoint any WAL left over from a previous unclean shutdown.
+	if _, err := db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`); err != nil {
+		return nil, fmt.Errorf("wal checkpoint: %w", err)
+	}
 	return db, nil
+}
+
+// Checkpoint merges the WAL into the main database file. Call this before
+// closing the database to ensure data is not left stranded in the WAL.
+func Checkpoint(db *sql.DB) {
+	db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`) //nolint:errcheck
 }
 
 // Migrate runs all .sql files in the given directory in lexicographic order.

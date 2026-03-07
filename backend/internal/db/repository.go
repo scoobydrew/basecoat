@@ -8,6 +8,17 @@ type UserRepository interface {
 	GetByID(id string) (*models.User, error)
 	GetByEmail(email string) (*models.User, error)
 	GetByUsername(username string) (*models.User, error)
+	ListAll() ([]models.User, error)
+}
+
+// Repos bundles all repositories for convenience (e.g. seeding).
+type Repos struct {
+	Users       UserRepository
+	Collections CollectionRepository
+	Games       GameRepository
+	Boxes       BoxRepository
+	Miniatures  MiniatureRepository
+	Catalog     CatalogRepository
 }
 
 // CollectionRepository defines collection persistence operations.

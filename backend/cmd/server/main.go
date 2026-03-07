@@ -28,7 +28,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
-	defer database.Close()
+	defer func() {
+		db.Checkpoint(database)
+		database.Close()
+	}()
 
 	migrationsDir := getenv("MIGRATIONS_DIR", migrationsDirRelative())
 	if err := db.Migrate(database, migrationsDir); err != nil {
@@ -47,17 +50,27 @@ func main() {
 		log.Println("ANTHROPIC_API_KEY not set — Claude mini lookup disabled")
 	}
 
-	router := api.NewRouter(api.Config{
-		JWTSecret:   jwtSecret,
+	repos := db.Repos{
 		Users:       db.NewUserRepository(database),
-		Games:       db.NewGameRepository(database),
 		Collections: db.NewCollectionRepository(database),
+		Games:       db.NewGameRepository(database),
 		Boxes:       db.NewBoxRepository(database),
 		Miniatures:  db.NewMiniatureRepository(database),
+		Catalog:     db.NewCatalogRepository(database),
+	}
+	seedDevData(repos)
+
+	router := api.NewRouter(api.Config{
+		JWTSecret:   jwtSecret,
+		Users:       repos.Users,
+		Games:       repos.Games,
+		Collections: repos.Collections,
+		Boxes:       repos.Boxes,
+		Miniatures:  repos.Miniatures,
 		Paints:      db.NewPaintRepository(database),
 		MiniPaints:  db.NewMiniaturePaintRepository(database),
 		Images:      db.NewImageRepository(database),
-		Catalog:     db.NewCatalogRepository(database),
+		Catalog:     repos.Catalog,
 		Storage:     store,
 		Claude:      claudeClient,
 		StoragePath: storagePath,
